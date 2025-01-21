@@ -1,42 +1,63 @@
-from scipy import integrate
+from scipy.sparse import lil_matrix
+from scipy.sparse.linalg import spsolve
+import numpy as np
 
-def solve(n):
-    h = 1 / n
-
-    def e(i,x):
-        x_im = (i - 1) * h
-        x_i = i * h
-        x_ip = (i + 1) * h
-
-        if x_im < x < x_i:
-            return (x - x_im) / (x_i - x_im)
-        if x_i < x < x_ip:
-            return (x_ip - x) / (x_ip - x_i)
-        return 0
-    
-    def ediff(i,x):
-        x_im = (i - 1) * h
-        x_i = i * h
-        x_ip = (i + 1) * h
-
-        if x_im < x < x_i:
-            return n
-        if x_i < x < x_ip:
-            return -n
-        return 0
+def main(n):
 
     def k(x):
-        if 0 <= x <= 1:
-            return 1
-        if 1 < x <= 2:
-            return 2*x
-        return 0
+        return 1 if x <= 1 else 2 * x
     
-    def B(i, j, a, b):
-        return -(e(i,0) * e(j,0)) * integrate.quad(lambda x: k(x) * ediff(i,x) * ediff(j,x), a, b)[0]
+    # create evenly spaced samples between boundries of omega
+    # omega = < 0, 2 >
+    samples = np.linspace(0,2,n+1)
+    h = samples[1] - samples[0]
+
+    # initialize matrices
+    # B - bilinear matrix n x n
+    # L - linear matrix 1 x n
+    B = lil_matrix((n+1, n+1))
+    L = np.zeros(n+1)
+
+    for i in range(n):
+        xi, xi1 = samples[i], samples[i+1]
+        ke = k( (xi + xi1) / 2) / h
+        B[i,i] += ke
+        B[i, i+1] -= ke
+        B[i+1, i] -= ke
+        B[i+1, i+1] += ke
+
+        fe = h * (100 * (xi + xi1) / 2) / 2
+        L[i] += fe
+        L[i+1] += fe
+
+    # 1st boundary conditions
+    B[0,0] -= 1  # corresponds to -v(0)u(0) in B
+    L[0] -= 20   # corresponds to -20v(0) in L
     
-    def L(i, a, b):
-        return integrate.quad(lambda x: 100 * x * e(i,x), a, b) - 20 * e(i,0)
-    
-    def matrixB():
-        pass
+    # 2nd boundaty condition: u(2) = 0
+    B[-1,-1] = 1
+    L[-1] = 0
+        
+    # Solving matrix equation
+    B = B.tocsr()  # convert matrix to Compressed Sparse Row (CSR) for more effective computing
+    u = spsolve(B, L)
+
+    # Results
+    print("Solved u:", u)
+
+    # Visualization
+    import matplotlib.pyplot as plt
+    plt.plot(samples, u, label='u(x)')
+    plt.xlabel('x')
+    plt.ylabel('u(x)')
+    plt.title('Heat transfer equation')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+if __name__ == '__main__':
+    while True:
+        n = int(input("Set number of samples: "))
+        if n >= 2: break
+        print("Incorrect value")
+    main(n)
