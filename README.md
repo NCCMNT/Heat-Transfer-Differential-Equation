@@ -45,3 +45,6 @@ $$[0, 2] \ni x \mapsto u(x) \in \mathbb{R}$$
 ## Solving
 Calculation up to the point of determining bilinear form B and linear form L can be found in pdf [here](https://github.com/NCCMNT/Differential-Equations/blob/main/heat%20trasfer%20equation.pdf).
 From this point the problem is solved numerically using Finite Element Method in [here](https://github.com/NCCMNT/Differential-Equations/blob/main/main.py).
+
+# Results
+<p align=center><img src=https://github.com/NCCMNT/Differential-Equations/blob/main/results.png /></p>
